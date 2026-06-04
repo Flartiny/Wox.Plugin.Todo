@@ -2,7 +2,17 @@ import * as fs from "fs"
 import * as path from "path"
 import { TodoItem } from "./types"
 
-const DATA_DIR = path.join(process.env.HOME || "~", ".wox", "data")
+function getWoxDataDir(): string {
+  const appData = process.env.APPDATA
+  if (process.platform === "win32" && appData) {
+    return path.join(appData, "Wox", "Data")
+  }
+
+  const home = process.env.HOME || process.env.USERPROFILE || "~"
+  return path.join(home, ".wox", "data")
+}
+
+const DATA_DIR = getWoxDataDir()
 const TODO_FILE = path.join(DATA_DIR, "todo.json")
 
 function ensureDataDir(): void {

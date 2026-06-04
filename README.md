@@ -10,7 +10,6 @@
 - ✅ **分类展示**：待完成任务在前，已完成任务在后
 - ✅ **本地存储**：数据存储在 `~/.wox/data/todo.json`，完全离线可用
 
-
 ## 安装方法
 
 ### 方式一：通过插件包安装
@@ -18,5 +17,3 @@
 1. 下载 `wox.plugin.Todo.wox` 文件
 2. 在 Wox 中输入 `wpm install <path-to-wox.plugin.Todo.wox>`
 3. 或者直接双击 `.wox` 文件安装
-
-

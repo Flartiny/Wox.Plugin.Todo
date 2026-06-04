@@ -8,7 +8,7 @@
   "MinWoxVersion": "2.0.0",
   "Runtime": "nodejs",
   "Website": "https://github.com/Flartiny/Wox.Plugin.Todo",
-  "Entry": "index.js",
+  "Entry": "dist/index.js",
   "Icon": "relative:images/app.svg",
   "SupportedOS": ["windows", "linux", "darwin"]
 }
