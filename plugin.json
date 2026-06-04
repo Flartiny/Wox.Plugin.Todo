@@ -1,0 +1,14 @@
+{
+  "Id": "73ea42c5-d034-4e69-a4a6-0b78ddd6b9a7",
+  "TriggerKeywords": ["todo"],
+  "Name": "Todo",
+  "Description": "本地待办事项管理插件",
+  "Author": "Flartiny",
+  "Version": "1.0.0",
+  "MinWoxVersion": "2.0.0",
+  "Runtime": "nodejs",
+  "Website": "https://github.com/Flartiny/Wox.Plugin.Todo",
+  "Entry": "index.js",
+  "Icon": "relative:images/app.svg",
+  "SupportedOS": ["windows", "linux", "darwin"]
+}
