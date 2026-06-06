@@ -75,6 +75,18 @@ export function toggleTodo(id: string): void {
   }
 }
 
+export function updateTodoText(id: string, text: string): TodoItem | undefined {
+  const todos = loadTodos()
+  const todo = todos.find(t => t.id === id)
+  if (!todo) {
+    return undefined
+  }
+
+  todo.text = normalizeTodoText(text)
+  saveTodos(todos)
+  return todo
+}
+
 export function searchTodos(keyword: string): TodoItem[] {
   const todos = loadTodos()
   if (!keyword.trim()) {

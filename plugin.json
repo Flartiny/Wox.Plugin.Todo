@@ -9,6 +9,6 @@
   "Runtime": "NODEJS",
   "Website": "https://github.com/Flartiny/Wox.Plugin.Todo",
   "Entry": "index.js",
-  "Icon": "relative:images/app.svg",
+  "Icon": "relative:images/logo.png",
   "SupportedOS": ["Windows", "Linux", "Darwin"]
 }

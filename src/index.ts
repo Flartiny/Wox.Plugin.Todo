@@ -1,12 +1,26 @@
-import { ActionContext, Context, Plugin, PluginInitParams, PublicAPI, Query, QueryResponse, Result, ResultAction } from "@wox-launcher/wox-plugin"
-import { addTodo, deleteTodo, findTodoByText, normalizeTodoText, searchTodos, toggleTodo } from "./storage"
+import {
+  ActionContext,
+  Context,
+  FormActionContext,
+  Plugin,
+  PluginInitParams,
+  PluginSettingDefinitionItem,
+  PluginSettingValueTextBox,
+  PublicAPI,
+  Query,
+  QueryResponse,
+  Result,
+  ResultAction
+} from "@wox-launcher/wox-plugin"
+import { addTodo, deleteTodo, findTodoByText, normalizeTodoText, searchTodos, toggleTodo, updateTodoText } from "./storage"
 import { TodoItem } from "./types"
 
 let api: PublicAPI
 const ICON = {
   ImageType: "relative" as const,
-  ImageData: "images/app.svg"
+  ImageData: "images/logo.png"
 }
+const EDIT_TEXT_KEY = "text"
 
 export const plugin: Plugin = {
   init: async (ctx: Context, initParams: PluginInitParams) => {
@@ -110,6 +124,36 @@ function convertTodosToResults(todos: TodoItem[]): Result[] {
       })
     }
 
+    actions.push({
+      Type: "form",
+      Name: "修改",
+      Hotkey: "Ctrl+E",
+      Form: createEditForm(todo),
+      OnSubmit: async (actionCtx: Context, formContext: FormActionContext) => {
+        const nextText = normalizeTodoText(formContext.Values[EDIT_TEXT_KEY] ?? "")
+        if (!nextText) {
+          await api.Notify(actionCtx, "任务内容不能为空")
+          return
+        }
+
+        const existingTodo = findTodoByText(nextText)
+        if (existingTodo && existingTodo.id !== todo.id) {
+          await api.Notify(actionCtx, `已存在相同任务: ${nextText}`)
+          return
+        }
+
+        const updatedTodo = updateTodoText(todo.id, nextText)
+        if (!updatedTodo) {
+          await api.Notify(actionCtx, "任务不存在，可能已被删除")
+          await api.ChangeQuery(actionCtx, { QueryType: "input", QueryText: "todo " })
+          return
+        }
+
+        await api.Notify(actionCtx, `已修改: ${updatedTodo.text}`)
+        await api.ChangeQuery(actionCtx, { QueryType: "input", QueryText: "todo " })
+      }
+    })
+
     // 删除操作
     actions.push({
       Name: "删除",
@@ -122,20 +166,63 @@ function convertTodosToResults(todos: TodoItem[]): Result[] {
       }
     })
 
+    const createdAtText = formatCreatedAt(todo.createdAt)
+
     return {
       Id: `todo-${todo.id}`,
       Title: todo.completed ? `✓ ${todo.text}` : todo.text,
-      SubTitle: todo.completed ? "已完成" : "待完成",
+      SubTitle: `创建于 ${createdAtText}`,
       Icon: ICON,
       Score: todo.completed ? 50 - index : 90 - index,
       Group: todo.completed ? "已完成" : "待完成",
       GroupScore: todo.completed ? 10 : 20,
+      Tails: [
+        {
+          Type: "text",
+          Text: todo.completed ? "已完成" : "待完成",
+          TextCategory: todo.completed ? "success" : "warning"
+        }
+      ],
       Preview: {
         PreviewType: "text",
-        PreviewData: `状态: ${todo.completed ? "已完成" : "待完成"}\n创建时间: ${new Date(todo.createdAt).toLocaleString()}`,
+        PreviewData: `内容:\n${todo.text}\n\n状态: ${todo.completed ? "已完成" : "待完成"}\n创建时间: ${new Date(todo.createdAt).toLocaleString()}`,
         PreviewProperties: {}
       },
       Actions: actions
     }
   })
+}
+
+function formatCreatedAt(createdAt: number): string {
+  return new Date(createdAt).toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  })
+}
+
+function createEditForm(todo: TodoItem): PluginSettingDefinitionItem[] {
+  return [
+    {
+      Type: "textbox",
+      Value: {
+        Key: EDIT_TEXT_KEY,
+        Label: "任务内容",
+        Suffix: "",
+        DefaultValue: todo.text,
+        Tooltip: "修改待办事项内容",
+        MaxLines: 3,
+        Validators: [
+          {
+            Type: "not_empty",
+            Value: {}
+          }
+        ]
+      } as PluginSettingValueTextBox,
+      DisabledInPlatforms: [],
+      IsPlatformSpecific: false
+    }
+  ]
 }
