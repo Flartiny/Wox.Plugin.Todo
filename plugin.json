@@ -5,10 +5,10 @@
   "Description": "本地待办事项管理插件",
   "Author": "Flartiny",
   "Version": "1.0.0",
-  "MinWoxVersion": "2.0.0",
-  "Runtime": "nodejs",
+  "MinWoxVersion": "2.0.4",
+  "Runtime": "NODEJS",
   "Website": "https://github.com/Flartiny/Wox.Plugin.Todo",
-  "Entry": "dist/index.js",
+  "Entry": "index.js",
   "Icon": "relative:images/app.svg",
-  "SupportedOS": ["windows", "linux", "darwin"]
+  "SupportedOS": ["Windows", "Linux", "Darwin"]
 }

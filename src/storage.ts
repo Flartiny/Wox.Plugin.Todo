@@ -14,6 +14,7 @@ function getWoxDataDir(): string {
 
 const DATA_DIR = getWoxDataDir()
 const TODO_FILE = path.join(DATA_DIR, "todo.json")
+const TODO_FILE_TMP = `${TODO_FILE}.tmp`
 
 function ensureDataDir(): void {
   if (!fs.existsSync(DATA_DIR)) {
@@ -28,7 +29,12 @@ export function loadTodos(): TodoItem[] {
   }
   try {
     const content = fs.readFileSync(TODO_FILE, "utf-8")
-    return JSON.parse(content)
+    const parsed: unknown = JSON.parse(content)
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+
+    return parsed.filter(isTodoItem)
   } catch {
     return []
   }
@@ -36,14 +42,16 @@ export function loadTodos(): TodoItem[] {
 
 export function saveTodos(todos: TodoItem[]): void {
   ensureDataDir()
-  fs.writeFileSync(TODO_FILE, JSON.stringify(todos, null, 2), "utf-8")
+  fs.writeFileSync(TODO_FILE_TMP, JSON.stringify(todos, null, 2), "utf-8")
+  fs.renameSync(TODO_FILE_TMP, TODO_FILE)
 }
 
 export function addTodo(text: string): TodoItem {
   const todos = loadTodos()
+  const normalizedText = normalizeTodoText(text)
   const newTodo: TodoItem = {
-    id: Date.now().toString(),
-    text,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    text: normalizedText,
     completed: false,
     createdAt: Date.now()
   }
@@ -74,4 +82,22 @@ export function searchTodos(keyword: string): TodoItem[] {
   }
   const lowerKeyword = keyword.toLowerCase()
   return todos.filter(t => t.text.toLowerCase().includes(lowerKeyword))
+}
+
+export function findTodoByText(text: string): TodoItem | undefined {
+  const normalizedText = normalizeTodoText(text).toLowerCase()
+  return loadTodos().find(todo => todo.text.toLowerCase() === normalizedText)
+}
+
+export function normalizeTodoText(text: string): string {
+  return text.trim().replace(/\s+/g, " ")
+}
+
+function isTodoItem(value: unknown): value is TodoItem {
+  if (typeof value !== "object" || value === null) {
+    return false
+  }
+
+  const todo = value as Partial<TodoItem>
+  return typeof todo.id === "string" && typeof todo.text === "string" && typeof todo.completed === "boolean" && typeof todo.createdAt === "number"
 }

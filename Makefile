@@ -69,15 +69,22 @@ else
 endif
 	$(NCC) build $(SRC_DIR)/index.ts -o $(DIST_DIR)
 	$(BABEL) $(DIST_DIR) --out-dir $(DIST_DIR)
+ifeq ($(OS),Windows_NT)
+	$(POWERSHELL) "Copy-Item 'images' -Destination '$(DIST_DIR)' -Recurse"
+	$(POWERSHELL) "Copy-Item 'plugin.json' -Destination '$(DIST_DIR)'"
+else
+	cp -r images $(DIST_DIR)
+	cp plugin.json $(DIST_DIR)
+endif
 
 test: check-init check-dev-deps
 	$(JEST)
 
 package: check-init build
 ifeq ($(OS),Windows_NT)
-	$(POWERSHELL) "if (Test-Path 'wox.plugin.$(PLUGIN_NAME).zip') { Remove-Item -Force 'wox.plugin.$(PLUGIN_NAME).zip' }; if (Test-Path 'wox.plugin.$(PLUGIN_NAME).wox') { Remove-Item -Force 'wox.plugin.$(PLUGIN_NAME).wox' }; Compress-Archive -Path 'plugin.json', 'images', '$(DIST_DIR)' -DestinationPath 'wox.plugin.$(PLUGIN_NAME).zip'; Move-Item 'wox.plugin.$(PLUGIN_NAME).zip' 'wox.plugin.$(PLUGIN_NAME).wox'"
+	$(POWERSHELL) "if (Test-Path 'wox.plugin.$(PLUGIN_NAME).zip') { Remove-Item -Force 'wox.plugin.$(PLUGIN_NAME).zip' }; if (Test-Path 'wox.plugin.$(PLUGIN_NAME).wox') { Remove-Item -Force 'wox.plugin.$(PLUGIN_NAME).wox' }; Compress-Archive -Path '$(DIST_DIR)\\*' -DestinationPath 'wox.plugin.$(PLUGIN_NAME).zip'; Move-Item 'wox.plugin.$(PLUGIN_NAME).zip' 'wox.plugin.$(PLUGIN_NAME).wox'"
 	$(POWERSHELL) "if (Test-Path '$(DIST_DIR)') { Remove-Item -Recurse -Force '$(DIST_DIR)' }"
 else
-	zip -r wox.plugin.$(PLUGIN_NAME).wox plugin.json images $(DIST_DIR)
+	cd $(DIST_DIR) && zip -r ../wox.plugin.$(PLUGIN_NAME).wox .
 	rm -rf $(DIST_DIR)
 endif
