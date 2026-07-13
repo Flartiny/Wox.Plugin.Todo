@@ -12,7 +12,7 @@ import {
   Result,
   ResultAction
 } from "@wox-launcher/wox-plugin"
-import { addTodo, deleteTodo, findTodoByText, normalizeTodoText, searchTodos, toggleTodo, updateTodoText } from "./storage"
+import { addTodo, cleanupExpiredTodos, deleteTodo, findTodoByText, normalizeTodoText, searchTodos, toggleTodo, updateTodoText } from "./storage"
 import { TodoItem } from "./types"
 
 let api: PublicAPI
@@ -29,6 +29,10 @@ export const plugin: Plugin = {
   },
 
   query: async (ctx: Context, query: Query): Promise<QueryResponse> => {
+    const expireDaysStr = await api.GetSetting(ctx, "expireDays")
+    const expireDays = parseInt(expireDaysStr, 10) || 30
+    cleanupExpiredTodos(expireDays)
+
     const search = normalizeTodoText(query.Search)
 
     // 如果有输入且不为空，直接提供新增选项

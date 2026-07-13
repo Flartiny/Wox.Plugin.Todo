@@ -71,8 +71,20 @@ export function toggleTodo(id: string): void {
   const todo = todos.find(t => t.id === id)
   if (todo) {
     todo.completed = !todo.completed
+    todo.completedAt = todo.completed ? Date.now() : undefined
     saveTodos(todos)
   }
+}
+
+export function cleanupExpiredTodos(expireDays: number): number {
+  const todos = loadTodos()
+  const cutoff = Date.now() - expireDays * 24 * 60 * 60 * 1000
+  const expired = todos.filter(t => t.completed && t.completedAt && t.completedAt < cutoff)
+  if (expired.length > 0) {
+    const remaining = todos.filter(t => !expired.includes(t))
+    saveTodos(remaining)
+  }
+  return expired.length
 }
 
 export function updateTodoText(id: string, text: string): TodoItem | undefined {
