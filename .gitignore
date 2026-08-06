@@ -9,3 +9,4 @@ node_modules/
 /.agents/skills
 /scripts
 /src/__tests__
+AGENTS.md

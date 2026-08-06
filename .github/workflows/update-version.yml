@@ -53,19 +53,21 @@ jobs:
           # Update SDK version
           pnpm add "$SDK_PACKAGE_NAME@$NEW_SDK_VERSION" --save-exact
 
-          # Increment plugin's own patch version
-          NEW_PLUGIN_VERSION=$(npm version patch --no-git-tag-version)
-          NEW_PLUGIN_VERSION_CLEAN=$(echo $NEW_PLUGIN_VERSION | sed 's/^v//')
-
-          # Sync version to plugin.json
+          # 以 plugin.json 的 Version 为权威（Wox store 用它检查更新），
+          # 在其基础上 bump patch 并双写同步 package.json / plugin.json，
+          # 避免基于旧版本号 bump 导致已发布版本倒退。
           node -e "
             const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             const plugin = JSON.parse(fs.readFileSync('plugin.json', 'utf8'));
-            plugin.Version = '$NEW_PLUGIN_VERSION_CLEAN';
+            const [major, minor, patch] = plugin.Version.split('.').map(Number);
+            const next = major + '.' + minor + '.' + (patch + 1);
+            pkg.version = next;
+            plugin.Version = next;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
             fs.writeFileSync('plugin.json', JSON.stringify(plugin, null, 2) + '\n');
+            console.log('Updated to SDK $NEW_SDK_VERSION and Plugin version ' + next);
           "
-
-          echo "Updated to SDK $NEW_SDK_VERSION and Plugin version $NEW_PLUGIN_VERSION_CLEAN"
 
       - name: Create Pull Request
         if: steps.check_update.outputs.has_update == 'true'
