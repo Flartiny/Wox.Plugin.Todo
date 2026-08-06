@@ -21,6 +21,9 @@ const ICON = {
   ImageData: "images/logo.png"
 }
 const EDIT_TEXT_KEY = "text"
+// 已完成任务自动清理的设置：0 = 永不清除，非法值回退默认，上限 365 天
+const DEFAULT_EXPIRE_DAYS = 30
+const MAX_EXPIRE_DAYS = 365
 
 export const plugin: Plugin = {
   init: async (ctx: Context, initParams: PluginInitParams) => {
@@ -30,7 +33,7 @@ export const plugin: Plugin = {
 
   query: async (ctx: Context, query: Query): Promise<QueryResponse> => {
     const expireDaysStr = await api.GetSetting(ctx, "expireDays")
-    const expireDays = parseInt(expireDaysStr, 10) || 30
+    const expireDays = parseExpireDays(expireDaysStr)
     cleanupExpiredTodos(expireDays)
 
     const search = normalizeTodoText(query.Search)
@@ -98,6 +101,19 @@ export const plugin: Plugin = {
 
     return { Results: convertTodosToResults(sortTodos(allTodos)) }
   }
+}
+
+// 解析"已完成任务过期天数"设置值：
+// 0 = 永不清除；负数/空/非数字回退默认 30 天；超过 365 天截断为 365 天
+function parseExpireDays(value: string): number {
+  const days = parseInt(value, 10)
+  if (Number.isNaN(days) || days < 0) {
+    return DEFAULT_EXPIRE_DAYS
+  }
+  if (days === 0) {
+    return Number.POSITIVE_INFINITY
+  }
+  return Math.min(days, MAX_EXPIRE_DAYS)
 }
 
 function sortTodos(todos: TodoItem[]): TodoItem[] {

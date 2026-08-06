@@ -4,11 +4,33 @@
   "Name": "Todo",
   "Description": "本地待办事项管理插件",
   "Author": "Flartiny",
-  "Version": "1.0.0",
+  "Version": "1.0.1",
   "MinWoxVersion": "2.0.4",
   "Runtime": "NODEJS",
   "Website": "https://github.com/Flartiny/Wox.Plugin.Todo",
   "Entry": "index.js",
   "Icon": "relative:images/logo.png",
-  "SupportedOS": ["Windows", "Linux", "Darwin"]
+  "SupportedOS": ["Windows", "Linux", "Darwin"],
+  "SettingDefinitions": [
+    {
+      "Type": "textbox",
+      "Value": {
+        "Key": "expireDays",
+        "Label": "已完成任务过期天数",
+        "DefaultValue": "30",
+        "Tooltip": "已完成任务保留的天数，到期自动清理；输入 0 表示永不清除，上限 365 天",
+        "Suffix": "天",
+        "MaxLines": 1,
+        "Validators": [
+          {
+            "Type": "is_number",
+            "Value": {
+              "IsInteger": true,
+              "IsFloat": false
+            }
+          }
+        ]
+      }
+    }
+  ]
 }
