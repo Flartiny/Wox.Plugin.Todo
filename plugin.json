@@ -31,6 +31,17 @@
           }
         ]
       }
+    },
+    {
+      "Type": "checkbox",
+      "Value": {
+        "Key": "preventHideAfterAction",
+        "Label": "操作后保持窗口显示",
+        "DefaultValue": "true",
+        "Tooltip": "启用后，添加/标记完成/删除/修改后 Wox 窗口保持显示，便于连续操作列表（此时按上方向键可正常在列表内循环导航）；关闭则操作后自动隐藏窗口"
+      },
+      "DisabledInPlatforms": [],
+      "IsPlatformSpecific": false
     }
   ]
 }

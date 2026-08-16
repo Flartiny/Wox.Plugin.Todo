@@ -24,6 +24,9 @@ const EDIT_TEXT_KEY = "text"
 // 已完成任务自动清理的设置：0 = 永不清除，非法值回退默认，上限 365 天
 const DEFAULT_EXPIRE_DAYS = 30
 const MAX_EXPIRE_DAYS = 365
+// 操作后保持窗口显示（PreventHideAfterAction）设置：默认开启，用户可在插件设置中关闭
+const DEFAULT_PREVENT_HIDE_AFTER_ACTION = true
+const PREVENT_HIDE_KEY = "preventHideAfterAction"
 
 export const plugin: Plugin = {
   init: async (ctx: Context, initParams: PluginInitParams) => {
@@ -35,6 +38,9 @@ export const plugin: Plugin = {
     const expireDaysStr = await api.GetSetting(ctx, "expireDays")
     const expireDays = parseExpireDays(expireDaysStr)
     cleanupExpiredTodos(expireDays)
+
+    const preventHideStr = await api.GetSetting(ctx, PREVENT_HIDE_KEY)
+    const preventHide = parsePreventHideAfterAction(preventHideStr)
 
     const search = normalizeTodoText(query.Search)
 
@@ -60,6 +66,7 @@ export const plugin: Plugin = {
           {
             Name: existingTodo ? "刷新列表" : "添加任务",
             IsDefault: true,
+            PreventHideAfterAction: preventHide,
             Action: async (actionCtx: Context, actionContext: ActionContext) => {
               void actionContext
               if (existingTodo) {
@@ -77,7 +84,7 @@ export const plugin: Plugin = {
 
       // 如果有匹配的任务，也显示出来
       if (todos.length > 0) {
-        results.push(...convertTodosToResults(todos))
+        results.push(...convertTodosToResults(todos, preventHide))
       }
 
       return { Results: results }
@@ -99,7 +106,7 @@ export const plugin: Plugin = {
       }
     }
 
-    return { Results: convertTodosToResults(sortTodos(allTodos)) }
+    return { Results: convertTodosToResults(sortTodos(allTodos), preventHide) }
   }
 }
 
@@ -116,6 +123,17 @@ function parseExpireDays(value: string): number {
   return Math.min(days, MAX_EXPIRE_DAYS)
 }
 
+// 解析"操作后保持窗口显示"设置值：仅接受 "true"/"false"，非法值回退默认开启
+function parsePreventHideAfterAction(value: string): boolean {
+  if (value === "true") {
+    return true
+  }
+  if (value === "false") {
+    return false
+  }
+  return DEFAULT_PREVENT_HIDE_AFTER_ACTION
+}
+
 function sortTodos(todos: TodoItem[]): TodoItem[] {
   return [...todos].sort((left, right) => {
     if (left.completed !== right.completed) {
@@ -126,7 +144,7 @@ function sortTodos(todos: TodoItem[]): TodoItem[] {
   })
 }
 
-function convertTodosToResults(todos: TodoItem[]): Result[] {
+function convertTodosToResults(todos: TodoItem[], preventHide: boolean): Result[] {
   return todos.map((todo, index) => {
     const actions: ResultAction[] = []
 
@@ -135,6 +153,7 @@ function convertTodosToResults(todos: TodoItem[]): Result[] {
       actions.push({
         Name: "标记为完成",
         IsDefault: true,
+        PreventHideAfterAction: preventHide,
         Action: async (actionCtx: Context, actionContext: ActionContext) => {
           void actionContext
           toggleTodo(todo.id)
@@ -148,6 +167,7 @@ function convertTodosToResults(todos: TodoItem[]): Result[] {
       Type: "form",
       Name: "修改",
       Hotkey: "Ctrl+E",
+      PreventHideAfterAction: preventHide,
       Form: createEditForm(todo),
       OnSubmit: async (actionCtx: Context, formContext: FormActionContext) => {
         const nextText = normalizeTodoText(formContext.Values[EDIT_TEXT_KEY] ?? "")
@@ -178,6 +198,7 @@ function convertTodosToResults(todos: TodoItem[]): Result[] {
     actions.push({
       Name: "删除",
       IsDefault: todo.completed,
+      PreventHideAfterAction: preventHide,
       Action: async (actionCtx: Context, actionContext: ActionContext) => {
         void actionContext
         deleteTodo(todo.id)
@@ -205,12 +226,18 @@ function convertTodosToResults(todos: TodoItem[]): Result[] {
       ],
       Preview: {
         PreviewType: "text",
-        PreviewData: `内容:\n${todo.text}\n\n状态: ${todo.completed ? "已完成" : "待完成"}\n创建时间: ${new Date(todo.createdAt).toLocaleString()}`,
+        PreviewData: buildPreviewData(todo),
         PreviewProperties: {}
       },
       Actions: actions
     }
   })
+}
+
+// 构建 preview 文本：内容、状态、创建时间，已完成时追加完成时间
+function buildPreviewData(todo: TodoItem): string {
+  const completedAtText = todo.completed && todo.completedAt ? `\n完成时间: ${new Date(todo.completedAt).toLocaleString()}` : ""
+  return `内容:\n${todo.text}\n\n状态: ${todo.completed ? "已完成" : "待完成"}\n创建时间: ${new Date(todo.createdAt).toLocaleString()}${completedAtText}`
 }
 
 function formatCreatedAt(createdAt: number): string {
