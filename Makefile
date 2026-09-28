@@ -78,7 +78,7 @@ else
 endif
 
 test: check-init check-dev-deps
-	$(JEST)
+	$(JEST) --passWithNoTests
 
 package: check-init build
 ifeq ($(OS),Windows_NT)
